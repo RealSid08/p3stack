@@ -968,7 +968,7 @@ function countLine(value: Counts): string {
     : entries.map(([name, count]) => `${name}=${count}`).join(", ");
 }
 
-export type Forge = "gh" | "origin";
+export type Forge = "gh";
 
 interface ForgePullRequestQuery {
   readonly stateField: string;
@@ -990,24 +990,13 @@ const FORGE_PULL_REQUEST_QUERIES: Readonly<
       ["CLOSED", "CLOSED"],
     ]),
   },
-  origin: {
-    stateField: "status",
-    headField: "headRef",
-    baseField: "baseRef",
-    states: new Map<string, FrontierPrState>([
-      ["open", "OPEN"],
-      ["draft", "OPEN"],
-      ["merged", "MERGED"],
-      ["closed", "CLOSED"],
-    ]),
-  },
 };
 
 export function parseForge(value: string): Forge {
-  if (value === "gh" || value === "origin") {
+  if (value === "gh") {
     return value;
   }
-  throw new UserError("forge must be gh or origin");
+  throw new UserError("forge must be gh");
 }
 
 interface ForgePullRequest {

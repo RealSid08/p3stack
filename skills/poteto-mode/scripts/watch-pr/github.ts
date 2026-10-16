@@ -326,32 +326,37 @@ function parseComment(value: unknown): T.ReviewComment {
     createdAt: string(object.createdAt, "review comment.createdAt"),
   };
 }
-function isBugbot(comment: T.ReviewComment | null): boolean {
+const REVIEW_BOT_LOGINS = [
+  "bugbot",
+  "coderabbit",
+  "copilot-pull-request-reviewer",
+  "chatgpt-codex-connector",
+  "greptile",
+  "sourcery-ai",
+] as const;
+const REVIEW_BOT_BODY_TOKENS = [
+  "bugbot",
+  "automation_id",
+  "security review",
+  "description start",
+  "severity",
+] as const;
+function isReviewBot(comment: T.ReviewComment | null): boolean {
   if (comment === null) return false;
   const author = (comment.authorLogin ?? "").toLowerCase();
   const body = comment.body.toLowerCase();
+  if (REVIEW_BOT_LOGINS.some((login) => author.includes(login))) return true;
   return (
-    author.includes("bugbot") ||
-    (author === "cursor" &&
-      [
-        "bugbot",
-        "cursor_automation_id",
-        "agentic security review",
-        "description start",
-        "severity",
-      ].some((token) => body.includes(token)))
+    (author.endsWith("[bot]") || author.endsWith("-bot") || passKey(comment) !== null) &&
+    REVIEW_BOT_BODY_TOKENS.some((token) => body.includes(token))
   );
 }
 function passKey(comment: T.ReviewComment | null): string | null {
   if (comment === null) return null;
-  for (const pattern of [
-    /RUN_ID:\s*([a-zA-Z0-9_.:-]+)/,
-    /CURSOR_AUTOMATION_ID:\s*([a-zA-Z0-9_.:-]+)/,
-  ]) {
-    const match = pattern.exec(comment.body);
-    if (match?.[1]) return match[1];
-  }
-  return null;
+  const match = /\b(?:RUN|[A-Z_]*AUTOMATION)_ID:\s*([a-zA-Z0-9_.:-]+)/.exec(
+    comment.body
+  );
+  return match?.[1] ?? null;
 }
 export function parseReviewThreadPage(value: unknown): T.ReviewThreadPage {
   const reviewThreads = record(
@@ -389,7 +394,7 @@ export function buildReviewThreads(
   const keys = new Set<string>();
   let keyless = false;
   for (const thread of threads) {
-    if (!isBugbot(thread.firstComment)) continue;
+    if (!isReviewBot(thread.firstComment)) continue;
     const key = passKey(thread.firstComment);
     if (key === null) keyless = true;
     else keys.add(key);
@@ -400,8 +405,8 @@ export function buildReviewThreads(
     .map(({ id, firstComment }) => ({
       id,
       firstComment,
-      isBugbot: isBugbot(firstComment),
-      bugbotReviewPasses: passes,
+      isReviewBot: isReviewBot(firstComment),
+      reviewBotPasses: passes,
     }));
 }
 export function parsePullRequest(

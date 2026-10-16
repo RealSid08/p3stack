@@ -136,15 +136,6 @@ const FORGE_FIXTURES: Readonly<
       baseRefName: base,
     }),
   },
-  origin: {
-    fields: "number,status,headRef,baseRef",
-    row: ({ number, state, head, base }) => ({
-      number,
-      status: state,
-      headRef: head,
-      baseRef: base,
-    }),
-  },
 };
 
 function forgeRows(
@@ -492,7 +483,7 @@ describe("Store", () => {
     ]);
   });
 
-  for (const forge of ["gh", "origin"] as const) {
+  for (const forge of ["gh"] as const) {
     it(`resolves the ordered frontier from the ${forge} base chain and validates an optional pin`, async () => {
       const { directory, store } = await initializedStore();
       const stack = await makeGitStack(directory);
@@ -680,7 +671,7 @@ describe("orch CLI", () => {
       "gt",
     ]);
     expect(badForge.code).toBe(1);
-    expect(badForge.stderr).toContain("Allowed choices are gh, origin");
+    expect(badForge.stderr).toContain("Allowed choices are gh");
   });
 
   it("accepts ORCH_STORE and emits complete JSON", async () => {
