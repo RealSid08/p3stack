@@ -1,6 +1,6 @@
-# t3-pstack
+# p3stack
 
-pstack for [T3 Code](https://github.com/pingdotgg/t3code): rigorous, verifiable agent workflows whose subagents, model panels, history, and wake-ups run on T3 Code's orchestrator.
+p3stack is pstack for [T3 Code](https://github.com/pingdotgg/t3code): rigorous, verifiable agent workflows whose subagents, model panels, history, and wake-ups run on T3 Code's orchestrator.
 
 ## Credit
 
@@ -65,8 +65,8 @@ Outside T3 Code the skills still load, but anything that spawns subagents falls 
 For yourself, across every provider T3 Code runs:
 
 ```sh
-git clone https://github.com/RealSid08/t3-pstack ~/workspace/t3-pstack
-~/workspace/t3-pstack/install.sh
+git clone https://github.com/RealSid08/p3stack ~/workspace/p3stack
+~/workspace/p3stack/install.sh
 ```
 
 This links each skill into `~/.agents/skills` (Codex and other Agent Skills readers) and `~/.claude/skills` (Claude Code). `git pull` updates them. Existing skills with the same name are skipped unless you pass `--force`.
@@ -74,7 +74,7 @@ This links each skill into `~/.agents/skills` (Codex and other Agent Skills read
 For one repository, vendored so the version is pinned in git:
 
 ```sh
-~/workspace/t3-pstack/install.sh --project /path/to/repo
+~/workspace/p3stack/install.sh --project /path/to/repo
 ```
 
 Remove with `./install.sh --uninstall` (add `--project <dir>` for a project install).
@@ -82,7 +82,7 @@ Remove with `./install.sh --uninstall` (add `--project <dir>` for a project inst
 Claude Code alone can also install it as a plugin. This covers Claude threads only, so prefer `install.sh` when you run more than one provider:
 
 ```
-/plugin install t3-pstack --marketplace RealSid08/t3-pstack
+/plugin install p3stack --marketplace RealSid08/p3stack
 ```
 
 ## Get started
@@ -115,4 +115,4 @@ CI runs both on every push. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
-MIT. Copyright (c) 2026 Lauren Tan for pstack, and the t3-pstack contributors for this adaptation. See [`LICENSE`](LICENSE).
+MIT. Copyright (c) 2026 Lauren Tan for pstack, and the p3stack contributors for this adaptation. See [`LICENSE`](LICENSE).

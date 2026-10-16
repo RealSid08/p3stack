@@ -10,7 +10,7 @@ Answer the user's question about pstack, hand them a prompt they can send, and l
 
 A message that asks for work, such as "use pstack to fix this bug", is not a help question. Read [`poteto-mode`](../poteto-mode/SKILL.md), do the work under it.
 
-This file maps questions to the skills that hold the answers. Those files own the details. Read the file you route to before you quote it, and trust it when it disagrees with this map. The links here point into the installed skills directory, which the user may not be able to open, so give the user the file's public copy: `https://github.com/RealSid08/t3-pstack/blob/main/skills/` followed by its path from the skills directory.
+This file maps questions to the skills that hold the answers. Those files own the details. Read the file you route to before you quote it, and trust it when it disagrees with this map. The links here point into the installed skills directory, which the user may not be able to open, so give the user the file's public copy: `https://github.com/RealSid08/p3stack/blob/main/skills/` followed by its path from the skills directory.
 
 ## Find out what they need
 
@@ -39,11 +39,11 @@ When the model file is missing and it matters, ask whether the user wants to pic
 2. Run [`/setup-pstack`](../setup-pstack/SKILL.md). It asks for a reasoning budget, maps a model from T3 Code's catalog to each role, and writes `~/.agents/pstack-models.md`. New runs read it.
 3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
 
-Installing changes nothing until the user invokes a skill. Only `/setup-pstack` loads from the user's words. The [README](https://github.com/RealSid08/t3-pstack#readme) has the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
+Installing changes nothing until the user invokes a skill. Only `/setup-pstack` loads from the user's words. The [README](https://github.com/RealSid08/p3stack#readme) has the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
 
 If cost is the worry, say where the tokens go and how to spend fewer. pstack spends extra tokens on subagents and review panels. Rerun `/setup-pstack` and pick a smaller budget or cheaper models. A role set to `inherit-parent` runs on the thread's own model, which saves tokens when the thread runs on a cheaper model. A shorter panel list runs fewer subagents, one for each entry. Save `/poteto-mode` for work that needs rigor.
 
-This edition of pstack is built for T3 Code. Its skills use the Agent Skills format, so any provider T3 Code runs can read them. The workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn subagents with per-role models through T3 Code's `delegate_task`, so outside T3 Code those parts run on the parent model only.
+This edition, p3stack, is pstack built for T3 Code. Its skills use the Agent Skills format, so any provider T3 Code runs can read them. The workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn subagents with per-role models through T3 Code's `delegate_task`, so outside T3 Code those parts run on the parent model only.
 
 ## Start a task with `/poteto-mode`
 

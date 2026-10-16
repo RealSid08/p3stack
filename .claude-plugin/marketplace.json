@@ -1,14 +1,14 @@
 {
-  "name": "t3-pstack",
+  "name": "p3stack",
   "description": "pstack for T3 Code, adapted from Lauren Tan's pstack.",
   "owner": {
-    "name": "the t3-pstack contributors"
+    "name": "the p3stack contributors"
   },
   "plugins": [
     {
-      "name": "t3-pstack",
+      "name": "p3stack",
       "source": "./",
-      "description": "pstack for T3 Code: rigorous, verifiable agent workflows on T3 Code's orchestrator."
+      "description": "pstack for T3 Code. Rigorous, verifiable agent workflows on T3 Code's orchestrator."
     }
   ]
 }

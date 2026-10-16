@@ -1,6 +1,6 @@
 # Upstream
 
-t3-pstack adapts [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan ([poteto](https://x.com/poteto)).
+p3stack adapts [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan ([poteto](https://x.com/poteto)).
 
 | Field | Value |
 |---|---|

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install t3-pstack skills for every provider T3 Code runs.
+# Install p3stack skills for every provider T3 Code runs.
 #
 # Usage:
 #   ./install.sh                  link skills into ~/.agents/skills and ~/.claude/skills

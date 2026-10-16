@@ -1,10 +1,10 @@
 {
-  "name": "t3-pstack",
+  "name": "p3stack",
   "version": "0.1.0",
-  "description": "pstack for T3 Code: rigorous, verifiable agent workflows whose subagents, model panels, and wake-ups run on T3 Code's orchestrator.",
-  "author": { "name": "the t3-pstack contributors" },
-  "homepage": "https://github.com/RealSid08/t3-pstack",
-  "repository": "https://github.com/RealSid08/t3-pstack",
+  "description": "pstack for T3 Code. Rigorous, verifiable agent workflows whose subagents, model panels, and wake-ups run on T3 Code's orchestrator.",
+  "author": { "name": "the p3stack contributors" },
+  "homepage": "https://github.com/RealSid08/p3stack",
+  "repository": "https://github.com/RealSid08/p3stack",
   "license": "MIT",
   "keywords": ["pstack", "poteto-mode", "t3code", "skills", "subagents"],
   "skills": "./skills/"
