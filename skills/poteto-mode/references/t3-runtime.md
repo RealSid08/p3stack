@@ -39,7 +39,7 @@ Leave `runtimeMode` and `interactionMode` unset. A narrower runtime mode makes t
 ## Isolation
 
 - `isolation: worktree` gives the child its own checkout of this thread's repository, created from the thread's current local commit. Uncommitted edits are not copied, so commit or stash what the child needs first. One writer per worktree (**principle-separate-before-serializing-shared-state**).
-- A child that must start from another branch gets `isolation: worktree` and a brief that opens with `git fetch origin <branch> && git switch <branch>`. Name the branch and the expected head SHA.
+- A child that must start from another branch gets `isolation: worktree` and a brief that opens with `git fetch origin <branch> && git switch -c <child-branch> FETCH_HEAD`. Name the branch and the expected head SHA. Git refuses to switch to `<branch>` itself while another worktree, such as the main checkout, has it checked out. A child that must push to `<branch>` pushes with `git push origin HEAD:<branch>`.
 - Work in a different repository than this thread's is not isolated by either mode. Have the brief create its own worktree first (`git -C <repo> worktree add <path> -b <branch>`) and work only there, or launch a thread bound to that repository with `t3_thread_launch`.
 - `isolation: shared` runs the child in this thread's checkout. Use it for read-only work and for a child that must touch state that lives here (a running dev server, a simulator, local-only auth).
 - A long-lived parallel track that the human should see as its own conversation is a top-level thread, not a subagent. Start it with `t3_thread_launch` and an explicit `workspaceStrategy` (`worktree` with `baseRef`, or `existing_worktree`). Use this only where a playbook calls for it (Orchestrate sub-coordinators) or the human asks for it.
@@ -63,13 +63,13 @@ pstack uses roles, not fixed models. A role's value is one of:
 2. `~/.agents/pstack-models.md` (personal, written by **setup-pstack**).
 3. The defaults table in `models.md` next to this file.
 
-**Building `target`.** Split the value into `providerInstanceId`, `model`, and effort. Call `orchestrator_capabilities` once per session and read that model's `options`. The response is large and may be saved to a file, so extract only the providers and models you need (for example with `jq '.providers[] | select(.providerInstanceId=="codex") | .models[] | select(.slug=="gpt-6.1-sol")'`). Pass `options` as an object, such as `{"reasoningEffort": "xhigh"}`. Set the reasoning option it advertises (`reasoningEffort` on Codex models, `effort` on Claude models) to the effort. For `+fast`, set the speed option it advertises (`serviceTier: priority` on Codex, `fastMode: true` on Claude). For standard speed, leave the speed option out. If the model advertises neither option, drop that part and say so.
+**Building `target`.** Split the value into `providerInstanceId`, `model`, and effort. Call `orchestrator_capabilities` once per session. Each provider lists `models`, each with an `id` and an `options` array of `{id, values}`. The response is large and may be saved to a file, so extract only what you need (for example with `jq '.providers[] | select(.providerInstanceId=="codex") | .models[] | select(.id=="gpt-6.1-sol")'`). The list is short. A model missing from it can still run: call `orchestrator_capabilities` with `search` to confirm it. Pass `options` as an object, such as `{"reasoningEffort": "xhigh"}`. Set the reasoning option the model advertises to the effort: `reasoningEffort` on Codex, `effort` on Claude, `variant` on OpenCode. For `+fast`, set the speed option it advertises (`serviceTier: priority` on Codex, `fastMode: true` on Claude). For standard speed, leave the speed option out. If the model advertises neither option, drop that part and say so. Check the `providerInstanceId`, `model`, and `options` that `delegate_task` returns against what you asked for.
 
 **Effort ladder.** `low` < `medium` < `high` < `xhigh` < `max`. When a skill says to raise or lower a role by a step, move along this ladder and clamp to what the model advertises.
 
 **Rejections.** If `delegate_task` rejects a target, retry once on the role's default from `models.md`. If the default is rejected too, run the role as `inherit-parent`. Say which roles fell back and why. Never block a review on a model problem.
 
-**Families.** A diverse panel needs different families. The family is the provider plus the model line: `claude-*` on `claudeAgent` is one family, `gpt-*` on `codex` is another. Keep a panel's entries in distinct families whenever two are available.
+**Families.** A diverse panel needs different families. The family is the model line, not the provider: `claude-*` is one family whether it runs on `claudeAgent` or `opencode`, and `gpt-*` is another. Keep a panel's entries in distinct families whenever two are available.
 
 ## History and transcripts
 
@@ -79,6 +79,10 @@ T3 Code stores every thread, including subagent threads.
 - Subagents: `task_status` names each child's `childThreadId`. Read it with `t3_thread_read`.
 - Prior threads in this project: `t3_thread_search` or `t3_thread_list`, scoped to the current project. Never read threads from other projects. They are private chats unrelated to this work.
 - Provider logs on disk (Claude Code under `~/.claude/projects/<slug>/`, Codex under `~/.codex/sessions/`) are a fallback only. Read only files for this workspace's path.
+
+## Running another skill
+
+When a skill says to run another pstack skill (`/name` or "the **name** skill"), read `<name>/SKILL.md` in the folder that holds `poteto-mode/` and follow it. Every skill is a sibling folder there. Do not call the harness's skill tool for it. Most pstack skills set `disable-model-invocation`, so Claude Code's `Skill` tool refuses them. When you tell the user to type one, write `/name` (Claude Code), `$name` (Codex), or `/p3stack:name` for a Claude Code plugin install.
 
 ## Todo lists
 

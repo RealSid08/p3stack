@@ -11,7 +11,7 @@ Write `~/.agents/pstack-models.md`, the personal file that sets pstack's model p
 
 ### 1. Detect available models
 
-Call T3 Code's `orchestrator_capabilities`. For each provider whose `canRunChildTask` is true, record its `providerInstanceId` and each model's slug, plus the reasoning and speed options the model advertises. That catalog is the dependable source. If the T3 tools are not reachable, stop and say pstack needs T3 Code's `t3-code` MCP server. `inherit-parent` is always valid even though it is not a detected model.
+Call T3 Code's `orchestrator_capabilities`. For each provider whose `canRunChildTask` is true, record its `providerInstanceId` and each model's `id`, plus the reasoning and speed options the model advertises. That catalog is the dependable source. It lists only a short set per provider, so when a role names a model it does not list, call `orchestrator_capabilities` again with that model as `search` before you treat it as missing. If the T3 tools are not reachable, stop and say pstack needs T3 Code's `t3-code` MCP server. `inherit-parent` is always valid even though it is not a detected model.
 
 ### 2. Load current state
 
@@ -32,7 +32,7 @@ If `~/.agents/pstack-models.md` exists, read it and treat its `# budget` line an
 
 ### 4. Validate
 
-Every model written must be in the detected catalog under the provider named in its value, and every effort must be one that model advertises. `inherit-parent` always passes. If a choice fails, stop and ask again.
+Every model written must be in the detected catalog, or found by `search`, under the provider named in its value, and every effort must be one that model advertises. `inherit-parent` always passes. If a choice fails, stop and ask again.
 
 ### 5. Write the file
 
@@ -54,3 +54,7 @@ Tell the user the file was written and that new pstack runs read it. Re-running 
 ### 7. Offer a verification skill (optional)
 
 Check whether the project has a way to drive the real app for proof (a `verify-*` skill, or an existing harness). If not, offer once: "want a project-local verification skill, so agents can drive the app the way a user does and prove changes work? I can generate one with /create-verification-skill." On yes, run `/create-verification-skill`. On no, move on without pushing.
+
+### 8. Offer a formal verification skill (optional)
+
+Check whether the project already has a formal verification skill (a project skill that runs a model checker, a proof, or another verifier against the code). If not, offer once: "want a formal verification skill, so agents can prove a key property of your code holds in every case in scope, not only the cases tests reach? I can generate one with /create-formal-verification-skill." On yes, run `/create-formal-verification-skill`. On no, move on without pushing.

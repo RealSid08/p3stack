@@ -1,6 +1,6 @@
 {
   "name": "p3stack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "pstack for T3 Code. Rigorous, verifiable agent workflows whose subagents, model panels, and wake-ups run on T3 Code's orchestrator.",
   "author": { "name": "the p3stack contributors" },
   "homepage": "https://github.com/RealSid08/p3stack",

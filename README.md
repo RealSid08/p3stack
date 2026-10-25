@@ -20,10 +20,12 @@ Around it sit focused skills you can also call directly:
 | `/architect`, `/arena` | Settle a design with competing sketches from different models, then build from the best base |
 | `/swarm` | Fan out parallel workers over slices or a race, each in its own worktree, and get one report |
 | `/interrogate` | Have a cross-model panel review a diff and try to break it |
-| `/reflect`, `/recall`, `/ketchup` | Turn a session into skill edits, rebuild your recent context, or catch up on this thread |
+| `/reflect`, `/recall`, `/ketchup`, `/ketchup-video` | Turn a session into skill edits, rebuild your recent context, or catch up on this thread in text or a short video |
 | `/tdd`, `/blast-radius`, `/benchmark-checklist` | Fix test-first, check what a diff can break, vet a measured number |
 | `/deslop`, `/no-comments`, `/unslop`, `/technical-writing` | Clean code, comments, and prose before review |
 | `/create-verification-skill`, `/maintain-verification-skill` | Give agents a scripted way to drive your app and prove changes work |
+| `/create-formal-verification-skill`, `/maintain-formal-verification-skill` | Prove a race or invariant holds in every case in scope, and keep that proof in step with the code |
+| `/statechart` | Draw a TLA+ model as a statechart, with each bug as a numbered path |
 | `principle-*` | One-rule skills that `/poteto-mode` reads and cites |
 
 `/poteto-help` routes any question about the rest.
@@ -57,6 +59,7 @@ The full role table is in [`skills/poteto-mode/references/models.md`](skills/pot
 - At least one provider that can run child tasks; two model families for the review panels
 - `git` and the GitHub CLI (`gh`) for the PR playbooks
 - [Bun](https://bun.sh) for the PR watcher and `orch` bookkeeping scripts (they install their own dependencies on first run)
+- Node.js for `/statechart`, which installs TLC and Java with [mise](https://mise.jdx.dev) on first run, and `ffmpeg` for `/ketchup-video`
 
 Outside T3 Code the skills still load, but anything that spawns subagents falls back to running on the parent model.
 
@@ -69,7 +72,7 @@ git clone https://github.com/RealSid08/p3stack ~/workspace/p3stack
 ~/workspace/p3stack/install.sh
 ```
 
-This links each skill into `~/.agents/skills` (Codex and other Agent Skills readers) and `~/.claude/skills` (Claude Code). `git pull` updates them. Existing skills with the same name are skipped unless you pass `--force`.
+This links each skill into `~/.agents/skills` (Codex and other Agent Skills readers) and `~/.claude/skills` (Claude Code). `git pull` updates them. Rerun `install.sh` after a pull that adds skills. Existing skills with the same name are skipped unless you pass `--force`.
 
 For one repository, vendored so the version is pinned in git:
 
@@ -82,8 +85,11 @@ Remove with `./install.sh --uninstall` (add `--project <dir>` for a project inst
 Claude Code alone can also install it as a plugin. This covers Claude threads only, so prefer `install.sh` when you run more than one provider:
 
 ```
-/plugin install p3stack --marketplace RealSid08/p3stack
+/plugin marketplace add RealSid08/p3stack
+/plugin install p3stack@p3stack
 ```
+
+Commands then take a `p3stack:` prefix, such as `/p3stack:poteto-mode`. Claude Code leaves auto-update off for third-party marketplaces. Turn it on from `/plugin`, under the marketplaces tab, or update by hand with `claude plugin update p3stack@p3stack`.
 
 ## Get started
 

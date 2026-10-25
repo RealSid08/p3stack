@@ -5,11 +5,11 @@ p3stack adapts [pstack](https://github.com/cursor/plugins/tree/main/pstack) by L
 | Field | Value |
 |---|---|
 | Source | `cursor/plugins`, directory `pstack/` |
-| Commit | `f713f14203cd6420cec13cd7c55c32d598dbab68` |
-| Version | 0.15.25 |
+| Commit | `99b609a72323b70204eab407c622f436e858e112` |
+| Version | 0.15.32 |
 | License | MIT |
 
-The first commit in this repository is an unmodified import of `pstack/skills` and `pstack/agents` at that commit, minus `make-bot-ui`. Every later commit is the port. `git diff <import commit> -- skills/` shows exactly what changed.
+The first commit in this repository is an unmodified import of `pstack/skills` and `pstack/agents` at `f713f14` (0.15.25), minus `make-bot-ui`. Every later commit is the port or a sync. To see what the port changed, diff `skills/` against upstream at the commit above.
 
 ## Porting rules
 
