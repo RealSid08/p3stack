@@ -44,6 +44,8 @@ Present the synthesizer's full Accepted / Rejected / Backlog output and wait for
 
 File each Backlog item to your team's devex or backlog tracker without waiting. Only the Accepted list waits for approval.
 
+Never edit an installed p3stack skill in place. A user install links `~/.agents/skills/<skill>` into the p3stack clone, which `git pull` overwrites, and a plugin install lives in a plugin cache. Before approval, show its destination: `.agents/skills/<skill>/` in the repository, or `~/.agents/skills/<skill>/` for the user, per **Skill locations** in `../poteto-mode/references/t3-runtime.md`. After approval, replace the link with a copy of the skill folder and edit the copy. A project install is already a copy committed to the repository, so edit it there. Never open a PR or push.
+
 Follow each approved row's Routing exactly:
 
 - Trivial existing-skill edit (a one-line bullet, a tightened sentence, a stale fact corrected): the parent does it directly.
