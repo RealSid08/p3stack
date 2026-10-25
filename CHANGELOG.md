@@ -8,6 +8,7 @@
 - Children that start from another branch create their own branch from it, because git refuses a branch checked out in another worktree.
 - `reflect` copies an installed skill before editing it, instead of editing the linked clone.
 - Fix the Claude Code plugin install commands in the README.
+- Fix T3 behavior found in review: delegated children cannot watch PRs, so they run a bounded `watch-pr`. Shipping bounds each watcher run. Stuck-owner replacement waits for the old owner to stop before pushing. Heartbeats read grandchildren by thread. Worktree cleanup reads each thread's binding with `t3_thread_read`. Eval reads tool activity. Children get the standard speed tier set explicitly. Model values may omit an effort for models without one.
 
 ## 0.1.0
 

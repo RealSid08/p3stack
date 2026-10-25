@@ -26,13 +26,13 @@ If `~/.agents/pstack-models.md` exists, read it and treat its `# budget` line an
 - `medium (high reasoning)`
 - `small (medium reasoning)`
 
-**(b) Apply it.** Build the working table from the defaults, and on a re-run keep any role the user changed by model, list, or `inherit-parent`. The budget sets the `@<effort>` of every model value, panel entries included, to `max`, `xhigh`, `high`, or `medium`. If a model does not advertise that effort, use the highest effort it advertises at or below the target. `inherit-parent` does not change. Keep any `+fast` suffix the user chose.
+**(b) Apply it.** Build the working table from the defaults, and on a re-run keep any role the user changed by model, list, or `inherit-parent`. The budget sets the `@<effort>` of every model value, panel entries included, to `max`, `xhigh`, `high`, or `medium`. If a model does not advertise that effort, use the highest effort it advertises at or below the target. A model that advertises no reasoning option keeps no `@<effort>`. `inherit-parent` does not change. Keep any `+fast` suffix the user chose.
 
 **(c) Show the roles and confirm.** Show every role with its value, and mark any model that is not in the detected catalog as needing a choice. Also list each line step 2 dropped. Ask whether to accept as-is or change specific roles, offering the detected models plus `inherit-parent` (the role runs on the parent thread's model). For panel roles (`arena runners`, `architect runners`, `interrogate reviewers`) the value is a list, and one subagent runs per entry, so the list length sets the count. Keep a panel's entries in distinct model families when two are available. `arena cross-judge pool` is also a list, but Arena selects one entry from it, preferring a family that differs from the parent's. `swarm workers` is the default model for every worker unless a race or comparison assigns another model per arm.
 
 ### 4. Validate
 
-Every model written must be in the detected catalog, or found by `search`, under the provider named in its value, and every effort must be one that model advertises. `inherit-parent` always passes. If a choice fails, stop and ask again.
+Every model written must be in the detected catalog, or found by `search`, under the provider named in its value, and every effort must be one that model advertises. A value without an effort passes only for a model that advertises no reasoning option. `inherit-parent` always passes. If a choice fails, stop and ask again.
 
 ### 5. Write the file
 
@@ -40,7 +40,7 @@ Write `~/.agents/pstack-models.md` with a `# budget` line naming the chosen labe
 
 ```
 # pstack model configuration. One line per role. Delete a line to fall back to the skill default.
-# Value: <providerInstanceId>/<model>@<effort>, optional +fast, or inherit-parent.
+# Value: <providerInstanceId>/<model>@<effort> (no @<effort> for a model without one), optional +fast, or inherit-parent.
 # budget: large (xhigh)
 feature, refactoring: codex/gpt-6.1-sol@xhigh
 judgment and prose: claudeAgent/claude-opus-5-5@xhigh

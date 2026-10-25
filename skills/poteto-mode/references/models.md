@@ -1,6 +1,6 @@
 # Default models per role
 
-Each line is `role: value`. A value is `<providerInstanceId>/<model>@<effort>` (append `+fast` for the fast tier) or `inherit-parent`. A panel role takes a comma-separated list, and one subagent runs per entry. `t3-runtime.md` explains the lookup order and how a value becomes a `delegate_task` target. **setup-pstack** writes a personal override to `~/.agents/pstack-models.md` in this same shape.
+Each line is `role: value`. A value is `<providerInstanceId>/<model>@<effort>` (append `+fast` for the fast tier, and drop `@<effort>` for a model with no reasoning option) or `inherit-parent`. A panel role takes a comma-separated list, and one subagent runs per entry. `t3-runtime.md` explains the lookup order and how a value becomes a `delegate_task` target. **setup-pstack** writes a personal override to `~/.agents/pstack-models.md` in this same shape.
 
 Defaults use two families: Claude Opus 5.5 for judgment and prose, GPT-6.1 Sol for code. Budget `large` (xhigh).
 
