@@ -11,7 +11,8 @@ const BANNED = [
   [/\bcursor\b(?![-_ ]?(?:location|is exhausted))/i, "host-specific word"],
   [/\.cursor\b|cursor-team-kit|cursor\.com|cursor\.sh/i, "host-specific path"],
   [/\bgrok\b|composer-\d/i, "model outside the supported catalog"],
-  [/AskQuestion\b|subagent_type|generalPurpose|agent-transcripts|run_in_background|cloud_base_branch/, "host-specific tool"],
+  [/AskQuestion\b|subagent_type|generalPurpose|agent-transcripts|run_in_background|cloud_base_branch|pstack-models\.mdc/, "host-specific tool"],
+  [/\bpreview_click\b|\bpreview_type\b/, "retired T3 preview tool (use preview_act)"],
   [/\borigin pr\b|\bBugbot\b/, "host-specific forge or bot"],
   [/\/loop\b/, "host-specific command"],
 ];
