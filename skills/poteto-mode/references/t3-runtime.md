@@ -1,6 +1,6 @@
 # T3 Code runtime
 
-How pstack skills spawn agents, pick models, read history, wake later, and drive apps inside T3 Code. Every skill that spawns, waits, or reads a transcript follows this file. The tools come from T3 Code's `t3-code` MCP server. A harness may prefix the names (for example `mcp__t3-code__delegate_task`). The behavior is the same.
+How pstack skills spawn agents, pick models, handle pull requests, read history, wake later, and drive apps inside T3 Code. Every skill that spawns, waits, or reads a transcript follows this file. The tools come from T3 Code's `t3-code` MCP server. A harness may prefix the names (for example `mcp__t3-code__delegate_task`). The behavior is the same.
 
 If the `t3-code` tools are missing, try one direct call to `orchestrator_capabilities` before you conclude they are absent. Some harnesses attach MCP servers late. If they are still missing, run every role on the parent model, do the fan-out sequentially yourself, and say so in the reply.
 
@@ -8,9 +8,11 @@ If the `t3-code` tools are missing, try one direct call to `orchestrator_capabil
 
 A subagent is a `delegate_task` call. One call starts one child agent that sees only the task prompt you give it. It never sees this chat.
 
+The first line of every kickoff, for a `delegate_task` child or a `t3_thread_launch` worker, is `Read <path>/worker.md before anything else.`, with `<path>` the absolute path of the `poteto-mode` skill folder. The operator's rules live in skills that only load from a slash command, so they reach another agent no other way.
+
 | Field | Value |
 |---|---|
-| `task` | The full brief. Pointers to files and PRs, not pasted context, except where a skill says to inline something. |
+| `task` | The full brief. Start with the `worker.md` line, then the goal and pointers to files and PRs, not pasted context, except where a skill says to inline something. |
 | `title` | Short label, such as `swarm: slice 3 auth` or `Reviewer B`. |
 | `target` | The role's model, resolved per **Models** below. Omit it for `inherit-parent`. |
 | `mode` | `async`. Use `wait` only when your very next step needs the result and nothing else can run meanwhile. |
@@ -24,7 +26,7 @@ Leave `runtimeMode` and `interactionMode` unset. A narrower runtime mode makes t
 
 **Waiting.** An async child's completion wakes this thread by notification. End your turn instead of polling, sleeping, or starting a watcher. When you are yourself a delegated child, your last turn is the report your parent reads, so end each waiting turn with one line such as `waiting on 3 of 5 workers` and put the full report only in the final turn. For a short fan-out inside a child, `mode: wait` on each spawn is simpler. Call `task_status` with the `taskId` only when you need a result mid-turn. It reads only the tasks this thread spawned. For a grandchild, read its `childThreadId` with `t3_thread_read`. `workState: result_available` plus `summary` is the child's final report. `waiting_for_children` means it is still draining its own subagents.
 
-**Stopping.** `task_cancel` stops a child and any queued turns under it.
+**Stopping.** `task_cancel` stops a child and any queued turns under it. Never call `t3_thread_interrupt` on a `childThreadId`.
 
 **Read-only children.** There is no read-only switch. Put the constraint in the brief: "Read-only. Do not edit, commit, push, or post anything." Use `isolation: shared` so the child reads the same checkout. A read-only child keeps its MCP access, so it can still look up tickets, chats, and traces.
 
@@ -32,17 +34,18 @@ Leave `runtimeMode` and `interactionMode` unset. A narrower runtime mode makes t
 
 ## Delegate kinds
 
-- **poteto-agent.** The default for any subagent spawned inside a poteto-mode playbook step. Start the brief with the preamble in `agents/poteto-agent.md` (next to this file), with the absolute path to `poteto-mode/SKILL.md` filled in. Then add the task.
-- **comment-sicko.** Used by the **no-comments** skill. The brief is the whole of `agents/comment-sicko.md` followed by the scope.
-- **Plain helper.** Workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`, `arena`) write their own briefs. Do not add the poteto-agent preamble to them.
+- **poteto-agent.** The default for any subagent spawned inside a poteto-mode playbook step. Open the task with the `worker.md` line, then the preamble in `agents/poteto-agent.md` (next to this file) with the absolute path to `poteto-mode/SKILL.md` filled in, then the goal and task.
+- **comment-sicko.** Used by the **no-comments** skill. The brief is the `worker.md` line, then the whole of `agents/comment-sicko.md` below its first paragraph, followed by the scope.
+- **Plain helper.** Workflow skills (`how`, `interrogate`, `swarm`, `arena`) write their own briefs. Open with the `worker.md` line and do not add the `poteto-agent` preamble to them.
 
 ## Isolation
 
 - `isolation: worktree` gives the child its own checkout of this thread's repository, created from the thread's current local commit. Uncommitted edits are not copied, and a stash stays behind too, so commit what the child needs first. One writer per worktree (**principle-separate-before-serializing-shared-state**).
 - A child that must start from another branch gets `isolation: worktree` and a brief that opens with `git fetch origin <branch> && git switch -c <child-branch> FETCH_HEAD`. Name the branch and the expected head SHA. Git refuses to switch to `<branch>` itself while another worktree, such as the main checkout, has it checked out. A child that must push to `<branch>` pushes with `git push origin HEAD:<branch>`.
+- To move the current thread itself into a new worktree on a new branch, check `t3_worktree_status` first, then call `t3_worktree_handoff` last in your turn with a `continuationPrompt`.
 - Work in a different repository than this thread's is not isolated by either mode. Have the brief create its own worktree first (`git -C <repo> worktree add <path> -b <branch>`) and work only there, or launch a thread bound to that repository with `t3_thread_launch`.
 - `isolation: shared` runs the child in this thread's checkout. Use it for read-only work and for a child that must touch state that lives here (a running dev server, a simulator, local-only auth).
-- A long-lived parallel track that the human should see as its own conversation is a top-level thread, not a subagent. Start it with `t3_thread_launch` and an explicit `workspaceStrategy` (`worktree` with `baseRef`, or `existing_worktree`). Use this only where a playbook calls for it (Orchestrate sub-coordinators) or the human asks for it.
+- A long-lived parallel track that the human should see as its own conversation is a top-level thread, not a subagent. Start it with `t3_thread_launch` and an explicit `workspaceStrategy` (`worktree` with `baseRef`, or `existing_worktree`). Use this only when the human asks for a separate thread.
 
 ## Follow-ups and reuse
 
@@ -54,7 +57,7 @@ When the new work needs state that lives in the prior child's checkout (uncommit
 
 pstack uses roles, not fixed models. A role's value is one of:
 
-- `<providerInstanceId>/<model>@<effort>`, such as `claudeAgent/claude-opus-5-5@xhigh` or `codex/gpt-6.1-sol@xhigh`. Append `+fast` for the provider's fast tier. A model that advertises no reasoning option is written without `@<effort>`, such as `antigravity/gemini-3.8-flash-high`.
+- `<providerInstanceId>/<model>@<effort>`, such as `claudeAgent/claude-opus-5-5@xhigh+fast`, `claudeAgent/claude-fable-5-2@high`, or `antigravity/gemini-4-neon@xhigh`. Append `+fast` for the provider's fast tier. A model that advertises no reasoning option is written without `@<effort>`.
 - `inherit-parent`. Omit `target`, so the child runs on this thread's provider and model.
 
 **Lookup order.** Use the first source that has the role's line:
@@ -63,21 +66,47 @@ pstack uses roles, not fixed models. A role's value is one of:
 2. `~/.agents/pstack-models.md` (personal, written by **setup-pstack**).
 3. The defaults table in `models.md` next to this file.
 
-**Building `target`.** Split the value into `providerInstanceId`, `model`, and effort. Call `orchestrator_capabilities` once per session. Each provider lists `models`, each with an `id` and an `options` array of `{id, values}`. The response is large and may be saved to a file, so extract only what you need (for example with `jq '.providers[] | select(.providerInstanceId=="codex") | .models[] | select(.id=="gpt-6.1-sol")'`). The list is short. A model missing from it can still run: call `orchestrator_capabilities` with `search` to confirm it. Pass `options` as an object, such as `{"reasoningEffort": "xhigh"}`. Set the reasoning option the model advertises to the effort: `reasoningEffort` on Codex, `effort` on Claude, `variant` on OpenCode. For `+fast`, set the speed option it advertises (`serviceTier: priority` on Codex, `fastMode: true` on Claude). For standard speed, set the standard value explicitly (`serviceTier: default` on Codex, `fastMode: false` on Claude), because a child on the parent's provider and model inherits any option you omit, a fast tier included. If the model advertises neither option, drop that part and say so. Check the `providerInstanceId`, `model`, and `options` that `delegate_task` returns against what you asked for.
+**Building `target`.** Split the value into `providerInstanceId`, `model`, and effort. Call `orchestrator_capabilities` once per session. Each provider lists `models`, each with an `id` and an `options` array of `{id, values}`. The response is large and may be saved to a file, so extract only what you need (for example with `jq '.providers[] | select(.providerInstanceId=="claudeAgent") | .models[] | select(.id=="claude-opus-5-5")'`). The list is short. A model missing from it can still run: call `orchestrator_capabilities` with `search` to confirm it. Pass `options` as an object, such as `{"effort": "xhigh", "fastMode": true}` or `{"thought_level": "xhigh"}`. Set the reasoning option the model advertises to the effort:
 
-**Effort ladder.** `low` < `medium` < `high` < `xhigh` < `max`. When a skill says to raise or lower a role by a step, move along this ladder and clamp to what the model advertises.
+- `effort` on Claude (`claudeAgent`)
+- `reasoningEffort` on Codex (`codex`)
+- `thought_level` on Antigravity (`antigravity`)
+- `variant` on OpenCode (`opencode`)
+- `reasoning-effort` on Amp Cloud (`ampCloud`)
 
-**Rejections.** If `delegate_task` rejects a target, retry once on the role's default from `models.md`. If the default is rejected too, run the role as `inherit-parent`. Say which roles fell back and why. Never block a review on a model problem.
+For `+fast`, set the speed option it advertises (`fastMode: true` on Claude, `serviceTier: priority` on Codex). For standard speed, set the standard value explicitly (`fastMode: false` on Claude, `serviceTier: default` on Codex), because a child on the parent's provider and model inherits any option you omit, a fast tier included. If the model advertises neither option, drop that part and say so. Check the `providerInstanceId`, `model`, and `options` that `delegate_task` returns against what you asked for.
 
-**Families.** A diverse panel needs different families. The family is the model line, not the provider: `claude-*` is one family whether it runs on `claudeAgent` or `opencode`, and `gpt-*` is another. Keep a panel's entries in distinct families whenever two are available.
+**Effort ladder.** `low` < `medium` < `high` < `xhigh`. No role runs above `xhigh`. When a skill says to raise or lower a role by a step, move along this ladder and clamp to what the model advertises.
+
+**Rejections.** If `delegate_task` rejects a target, never pass it again. Fall back to the role's line or default from `models.md`, then the calling skill's fallback, then the closest valid model of the same family, then `inherit-parent`. Say which roles fell back and why. Never block a review on a model problem.
+
+**Families and vendors.** Families go by model line, independent of provider, longest prefix match first: `claude-fable-*`, `claude-*`, `gemini-*`, `gpt-*`. Any other model's family is the text before the first hyphen after dropping any provider prefix. A diverse panel keeps entries in distinct families whenever two are available. For cross-vendor checks (such as Arena's cross-judge and second opinions), Fable and the other Claude models are one vendor (Anthropic), Gemini is another (Google), and GPT is another (OpenAI). If a default panel provider such as `antigravity` is disabled in the user's T3 Code catalog, substitute another non-Claude vendor from the catalog (such as `codex/gpt-6.2-sol@xhigh`) and say so.
+
+## Pull requests, CI, and issues
+
+When T3 Code's `pull_request_*`, `ci_*`, and issue tools are present, prefer them over `gh`:
+
+- `pull_request_create` pushes the thread's branch, opens the PR ready (`draft: false`), and links it to the thread automatically.
+- `pull_request_read` (with `include: ["body", "checks", "threads", "comments", "diff"]`) reads state, `headSha`, check counts, and unresolved review threads.
+- `pull_request_list` lists open, closed, or merged PRs in this repo.
+- `pull_request_update` edits title, body, labels, or reviewers, or marks a draft ready (`ready: true`).
+- `pull_request_respond` replies to, resolves, or reopens a review thread (or comments on the PR when `reviewThreadId` is omitted) without shell interpolation.
+- `pull_request_review` submits structured reviews (`approve`, `request-changes`, `comment`).
+- `pull_request_merge` merges with `expectedHeadSha` (from `pull_request_read`), `method: "squash"`, and optional `auto: true`.
+- `ci_logs` reads the tail of failing check logs, and `ci_rerun` reruns failing checks or one named check.
+- `link_pull_request` / `link_pull_requests` registers any PR you created with `gh` or took over. Check `list_thread_pull_requests` before handback.
+- `list_issues`, `read_issue`, `create_issue`, `comment_on_issue`, `set_issue_state`, and `link_issue` handle the project's issue tracker. Link every issue you work on or file.
+
+Fall back to `gh` when `pull_request_*` tools are unavailable, or for operations they do not cover (such as retargeting a PR's base branch with `gh pr edit <pr> --base <branch>`). Never require Graphite (`gt`).
 
 ## History and transcripts
 
 T3 Code stores every thread, including subagent threads.
 
-- This thread: `orchestrator_capabilities` returns `parentThreadId`. Read it with `t3_thread_read`. Use incremental reads for long threads.
+- This thread: `orchestrator_capabilities` returns `parentThreadId`. Read it with `t3_thread_read`. Use `view: "activity"` when you need tool calls and file reads, not only messages. Use incremental reads (`beforePosition` / `afterPosition`) for long threads.
 - Subagents: `task_status` names each child's `childThreadId`. Read it with `t3_thread_read`.
 - Prior threads in this project: `t3_thread_search` or `t3_thread_list`, scoped to the current project. Never read threads from other projects. They are private chats unrelated to this work.
+- Thread utilities: `t3_thread_transfer` forks or merges context between related threads, `t3_thread_organize` pins, snoozes, archives, or settles a thread, and `t3_queue` inspects queued messages.
 - Provider logs on disk (Claude Code under `~/.claude/projects/<slug>/`, Codex under `~/.codex/sessions/`) are a fallback only. Read only files for this workspace's path.
 
 ## Running another skill
@@ -90,20 +119,20 @@ When a skill says to open a todolist, use the harness's todo or plan tool (`Todo
 
 ## Asking the human
 
-Use the harness's structured question tool when one exists (`AskUserQuestion` in Claude Code). Otherwise ask one short question in chat with the options listed. Do not ask what an experiment can answer (see the Non-negotiables in `poteto-mode/SKILL.md`).
+Use the harness's structured question tool when one exists (`AskUserQuestion` in Claude Code, `ask_question` in Antigravity). Otherwise ask one short question in chat with the options listed. For a login, token, PIN, pairing code, or sudo password only the user can give, call `request_secret` instead of asking in chat. When the user must read a draft or code block mid-turn before answering, call `send_to_user`. Do not ask what an experiment can answer (see the Non-negotiables in `poteto-mode/SKILL.md`).
 
 ## Waking later
 
 - A child's completion already wakes you. Do not add a watcher for it.
-- A pull request: `watch_pull_request` wakes this thread when checks finish, someone comments, or the branch conflicts. Call `unwatch_pull_request` when you hand back. Only a top-level thread can watch. A delegated child cannot, so a child that must wait on its PR runs the bare `scripts/watch-pr/watch-pr` with a `--timeout`, which polls with backoff and returns on a verdict. That is the one sanctioned poll.
+- A pull request: `watch_pull_request` wakes this thread when checks finish, someone comments, or the branch conflicts. Pass `until: "checks"` for a PR you hand to the user, or `until: "merged"` when you act on it yourself (such as merging after approval). Call `unwatch_pull_request` when you hand back. Only a top-level thread can watch. A delegated child cannot, so a child that must wait on its PR runs the bare `scripts/watch-pr/watch-pr` with a `--timeout`, which polls with backoff and returns on a verdict. That is the one sanctioned poll.
 - A heartbeat or any other timed wake: `schedule_task` with `{"type":"interval","everyMs":...}`, bound to this thread. Delete it with `delete_scheduled_task` when the run ends.
 
 ## Driving the real app
 
 Playbooks call this the **control skill**. Prefer a project verification skill (`verify-*`, made by **create-verification-skill**) when one exists. Otherwise pick by surface:
 
-- Web UI: T3 preview tools (`preview_open`, `preview_navigate`, `preview_click`, `preview_type`, `preview_snapshot`, `preview_evaluate`, `preview_recording_start`).
-- iOS or Android simulator: `device_list`, `device_open`, `device_screenshot`, plus the platform CLI (`xcrun simctl`, `adb`).
+- Web UI: T3 preview tools (`preview_status`, `preview_open`, `preview_navigate`, `preview_snapshot`, `preview_act`, `preview_wait_for`, `preview_evaluate`, `preview_resize`, `preview_set_appearance`, `preview_dialog`, `preview_recording_start`, `preview_recording_stop`). Close tabs you opened for your own checks with `t3_preview_close` when done.
+- iOS or Android simulator: `device_list`, `device_open` (returns an `agent-device` CLI call pinned to that device for app launch, taps, text entry, alerts, and recordings), `device_screenshot`, and `device_close`. Reserve `xcrun simctl` and `adb` for builds, installs, logs, and test runners, not UI driving.
 - Native desktop app: a GUI automation MCP if one is connected.
 - CLI or TUI: run it in the shell and capture the output. Use a pseudo-terminal (`script`, `expect`, or `tmux`) for interactive TUIs.
 
@@ -122,4 +151,4 @@ A new project-local skill goes in `.agents/skills/<name>/SKILL.md` with the `.cl
 
 ## Decision trail and run store
 
-Run state for Orchestrate, autopilots, and decision trails lives outside the repository in `~/.pstack/<repo-slug>/`, where `<repo-slug>` is the repository's main checkout path with the leading slash dropped and each `/` turned into `-`. Create it on first use. Pass it to the `orch` CLI as `--store` or `ORCH_STORE`.
+Run state for autopilots and decision trails lives outside the repository in `~/.pstack/<repo-slug>/`, where `<repo-slug>` is the repository's main checkout path with the leading slash dropped and each `/` turned into `-`. Create it on first use.

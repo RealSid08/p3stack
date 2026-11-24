@@ -1,6 +1,6 @@
 # p3stack
 
-p3stack is pstack for [T3 Code](https://github.com/pingdotgg/t3code): rigorous, verifiable agent workflows whose subagents, model panels, history, and wake-ups run on T3 Code's orchestrator.
+p3stack is pstack for [T3 Code](https://github.com/pingdotgg/t3code): rigorous, verifiable agent workflows whose subagents, model panels, PR operations, history, and wake-ups run on T3 Code's orchestrator.
 
 ## Credit
 
@@ -10,22 +10,23 @@ The playbooks, principles, and judgment in these skills are hers. This repositor
 
 ## What it does
 
-`/poteto-mode` reads your task, picks one of 23 playbooks (bug fix, feature, perf, babysit a PR, ship a stack, orchestrate a multi-day program, and more), copies its steps into the todo list, and runs the other skills as the steps need them. It favors less code, verified on the real artifact, over more code.
+`/poteto-mode` reads your task, picks one of 22 playbooks (bug fix, feature, perf, babysit a PR, ship a stack, autopilot a queue, and more), copies its steps into the todo list, and runs the other skills as the steps need them. Large, cross-cutting, or unattended work routes to `/figure-it-out`. Every spawned agent starts from `poteto-mode/worker.md` so the operator's rules reach child threads directly. It favors less code, verified on the real artifact, over more code.
 
 Around it sit focused skills you can also call directly:
 
 | Skill | Use it to |
 |---|---|
+| `/reframe`, `/sharpen`, `/in-your-own-words` | Learn the expert words for what you're building, deepen a prompt before sending, or verify the agent understood the goal |
 | `/how`, `/why`, `/teach` | Understand how code works, why it is shaped that way, or have either explained plainly |
-| `/architect`, `/arena` | Settle a design with competing sketches from different models, then build from the best base |
+| `/architect`, `/arena` | Sketch two shapes and pick the cleaner boundary, or run parallel competing implementations and graft the best parts |
 | `/swarm` | Fan out parallel workers over slices or a race, each in its own worktree, and get one report |
-| `/interrogate` | Have a cross-model panel review a diff and try to break it |
-| `/reflect`, `/recall`, `/ketchup`, `/ketchup-video` | Turn a session into skill edits, rebuild your recent context, or catch up on this thread in text or a short video |
+| `/interrogate` | Have a cross-model panel try to break a diff, keeping only findings proven by a run |
+| `/reflect`, `/recall`, `/ketchup`, `/ketchup-video` | Turn a session into skill edits, rebuild your recent context, or catch up on this thread in text or a short subtitled video |
 | `/tdd`, `/blast-radius`, `/benchmark-checklist` | Fix test-first, check what a diff can break, vet a measured number |
 | `/deslop`, `/no-comments`, `/unslop`, `/technical-writing` | Clean code, comments, and prose before review |
 | `/create-verification-skill`, `/maintain-verification-skill` | Give agents a scripted way to drive your app and prove changes work |
 | `/create-formal-verification-skill`, `/maintain-formal-verification-skill` | Prove a race or invariant holds in every case in scope, and keep that proof in step with the code |
-| `/statechart` | Draw a TLA+ model as a statechart, with each bug as a numbered path |
+| `/statechart` | Check a TLA+ model with TLC and draw it as a Mermaid statechart, with the shortest path to each rule that breaks |
 | `principle-*` | One-rule skills that `/poteto-mode` reads and cites |
 
 `/poteto-help` routes any question about the rest.
@@ -36,30 +37,33 @@ Every T3-specific behavior lives in one file, [`skills/poteto-mode/references/t3
 
 | Need | T3 Code mechanism |
 |---|---|
-| Spawn a subagent on a chosen model | `delegate_task` with a `target` provider, model, and reasoning effort |
-| Parallel writers that do not collide | `delegate_task` with `isolation: "worktree"` |
+| Spawn a subagent on a chosen model | `delegate_task` with a `target` provider, model, and reasoning/speed options |
+| Parallel writers that do not collide | `delegate_task` with `isolation: "worktree"` (or `t3_worktree_handoff` for the current thread) |
 | Wait for results | Async children wake the parent thread; `task_status`, `task_cancel` |
-| Read a session or a subagent's work | `t3_thread_read`, `t3_thread_search` |
+| Pull requests, CI, and issues | `pull_request_*`, `ci_logs`, `ci_rerun`, `link_pull_request`, `list_issues` / `read_issue` / `link_issue` (`gh` fallback) |
+| Read a session or a subagent's work | `t3_thread_read` (`messages` or `activity` view), `t3_thread_search`, `t3_thread_list` |
 | Wake on CI, reviews, or a timer | `watch_pull_request`, `schedule_task` |
-| Drive the real app | T3 preview and device tools, or a project `verify-*` skill |
-| Register PRs with the thread | `link_pull_request` |
+| Drive the real app | T3 preview (`preview_open`, `preview_snapshot`, `preview_act`) and device (`device_open` + `agent-device`, `device_screenshot`) tools, or a project `verify-*` skill |
+| Visual reports and secrets | `html_preview` + `html_render`, `request_secret` |
 
 ### Models
 
-pstack assigns models by role. The defaults use two families so review panels stay diverse:
+pstack assigns models by role, capped at `xhigh`:
 
-- Judgment, prose, and the hardest changes: Claude Opus 5.5 (`claudeAgent/claude-opus-5-5@xhigh`)
-- Code delegates, explorers, and swarm workers: GPT-6.1 Sol (`codex/gpt-6.1-sol@xhigh`)
+- Code, prose, and judgment: Claude Opus 5.5 (`claudeAgent/claude-opus-5-5@xhigh+fast`)
+- Swarm workers, verification, and mechanical edits: Claude Opus 5.5 (`claudeAgent/claude-opus-5-5@high+fast`)
+- Diverse panels (`arena runners`, `interrogate reviewers`): Claude Fable 5.2 (`claudeAgent/claude-fable-5-2@high`), Claude Opus 5.5 (`claudeAgent/claude-opus-5-5@high+fast`), and Gemini 4 Neon (`antigravity/gemini-4-neon@xhigh`)
+- Cross-judge pool (`arena cross-judge pool`): Claude Opus 5.5 (`claudeAgent/claude-opus-5-5@high+fast`) and Gemini 4 Neon (`antigravity/gemini-4-neon@xhigh`)
 
-The full role table is in [`skills/poteto-mode/references/models.md`](skills/poteto-mode/references/models.md). Run `/setup-pstack` to pick a budget and map roles to whatever your T3 Code catalog offers. It writes `~/.agents/pstack-models.md`. A repository can pin its own with `.agents/pstack-models.md`. Any role can be `inherit-parent` to run on the thread's own model.
+The full role table is in [`skills/poteto-mode/references/models.md`](skills/poteto-mode/references/models.md). Run `/setup-pstack` to pick a budget (`large`, `medium`, or `small`) and map roles to whatever your T3 Code catalog offers (for example, substituting `codex/gpt-6.2-sol@xhigh` when Antigravity is disabled). It writes `~/.agents/pstack-models.md`. A repository can pin its own with `.agents/pstack-models.md`. Any role can be `inherit-parent` to run on the thread's own model.
 
 ## Requirements
 
 - T3 Code with its `t3-code` MCP server available to your providers (it is by default)
-- At least one provider that can run child tasks; two model families for the review panels
-- `git` and the GitHub CLI (`gh`) for the PR playbooks
-- [Bun](https://bun.sh) for the PR watcher and `orch` bookkeeping scripts (they install their own dependencies on first run)
-- Node.js for `/statechart`, which installs TLC and Java with [mise](https://mise.jdx.dev) on first run, and `ffmpeg` for `/ketchup-video`
+- At least one provider that can run child tasks; two model vendors for cross-model review panels
+- `git` and the GitHub CLI (`gh`) as fallback for PR operations outside T3's `pull_request_*` tools
+- [Bun](https://bun.sh) for the `watch-pr` script (installs its own dependencies on first run)
+- Node.js 22.18+ (or Bun 1.1.5+ / Deno 2.0+) for `/statechart`, which installs TLC and Java with [mise](https://mise.jdx.dev) on first run, and `ffmpeg` for `/ketchup-video`
 
 Outside T3 Code the skills still load, but anything that spawns subagents falls back to running on the parent model.
 
@@ -102,9 +106,9 @@ Commands then take a `p3stack:` prefix, such as `/p3stack:poteto-mode`. Claude C
 
 ## Differences from upstream
 
-- Subagents, model selection, transcripts, wake-ups, and app driving use T3 Code tools. See `t3-runtime.md`.
-- Default models are Claude Opus 5.5 and GPT-6.1 Sol. Model config moves to `~/.agents/pstack-models.md`.
-- PR work uses `gh` only. Review-bot handling is generic rather than tied to one bot.
+- Subagents, model selection, PR and CI operations, transcripts, wake-ups, and app driving use T3 Code tools. See `t3-runtime.md`.
+- Model config lives in `~/.agents/pstack-models.md` (with `.agents/pstack-models.md` per-repo override) and maps to T3 Code provider/model IDs (`claudeAgent/claude-opus-5-5@xhigh+fast`, `claudeAgent/claude-fable-5-2@high`, `antigravity/gemini-4-neon@xhigh`).
+- PR work prefers T3 Code's `pull_request_*` and `ci_*` tools with `gh` fallback. Review-bot handling is generic rather than tied to one bot.
 - A small `deslop` skill replaces the external one the playbooks relied on.
 - `make-bot-ui` is not included, because it targets another host's automations.
 
@@ -114,10 +118,11 @@ Commands then take a `p3stack:` prefix, such as `/p3stack:poteto-mode`. Claude C
 
 ```sh
 node scripts/validate.mjs                 # frontmatter, names, links, host-neutral wording
-cd skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test
+cd skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
+cd skills/statechart/scripts && npm install && npm test
 ```
 
-CI runs both on every push. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+CI runs all three on every push. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
